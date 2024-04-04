@@ -1,5 +1,6 @@
 :root {
   --data-table--button-gap: 16px;
+  min-height: 25rem;
 }
 
 .App {
