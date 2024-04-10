@@ -73,6 +73,7 @@ function App({
     alertFieldName,
     alertPosition,
     reviewsField,
+    progressBarColor,
     progressBarField,
   } = optionsForPlugin;
 
@@ -387,11 +388,18 @@ function App({
       );
     },
     ProgressBar: (field, element) => {
+      const color = progressBarColor
+        ? progressBarColor.split("#").join("")
+        : "6366F1";
+
       return (
         <ProgressBar
           value={element[field]}
           showValue={showValueProgressBar}
-          style={{ height: `${progressBarHeight}px`, color: "#000" }}
+          color={`#${color}`}
+          style={{
+            height: `${progressBarHeight}px`,
+          }}
         ></ProgressBar>
       );
     },
