@@ -63,8 +63,6 @@ function App({
     filter,
     dragSelection,
     selectionMode,
-    fixedHeader,
-    editable,
     editMode,
     showValueProgressBar,
     progressBarHeight,
@@ -73,7 +71,7 @@ function App({
     alertFieldName,
     alertPosition,
     reviewsField,
-    progressBarColor,
+    progressValueColor,
     progressBarField,
   } = optionsForPlugin;
 
@@ -388,15 +386,10 @@ function App({
       );
     },
     ProgressBar: (field, element) => {
-      const color = progressBarColor
-        ? progressBarColor.split("#").join("")
-        : "6366F1";
-
       return (
         <ProgressBar
           value={element[field]}
           showValue={showValueProgressBar}
-          color={`#${color}`}
           style={{
             height: `${progressBarHeight}px`,
           }}
