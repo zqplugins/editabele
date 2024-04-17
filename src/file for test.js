@@ -144,7 +144,7 @@ component.updateData({
 
 ],
     optionsForPlugin: {
-        headerText: "It is Hader text",
+        headerText: "It is header text",
         footerText: "It is footer text",
         showGridlines: true,
         stripedRows:  true,
