@@ -71,7 +71,9 @@ function App({
     alertFieldName,
     alertPosition,
     reviewsField,
-    progressValueColor,
+    primaryColor,
+    highlightColor,
+    progressBarLabelColor,
     progressBarField,
   } = optionsForPlugin;
 
@@ -247,6 +249,10 @@ function App({
           <Button
             type="button"
             icon="pi pi-file"
+            style={{
+              backgroundColor: "var(--primary-color)",
+              border: `0.1rem solid ${"var(--primary-color)"}`,
+            }}
             rounded
             onClick={() => exportCSV(false)}
             data-pr-tooltip="CSV"
@@ -254,6 +260,10 @@ function App({
           <Button
             type="button"
             icon="pi pi-plus"
+            style={{
+              backgroundColor: "var(--primary-color)",
+              border: `0.1rem solid ${"var(--primary-color)"}`,
+            }}
             rounded
             onClick={() => {
               const newTempId = `--internal-${new Date().getTime()}`;
@@ -280,6 +290,7 @@ function App({
           icon="pi pi-filter-slash"
           label="Clear"
           outlined
+          style={{ color: "var(--primary-color)" }}
           onClick={clearFilter}
         />
         <span className="p-input-icon-left">
@@ -432,10 +443,127 @@ function App({
 
   return (
     <div className="card" style={{ height: "100%" }}>
-      {showAlert && <Toast ref={toast} position={alertPosition} />}
+      {showAlert && (
+        <Toast color={primaryColor} ref={toast} position={alertPosition} />
+      )}
       <style>
         :root {"{"}
-        --data-table--button-gap: 123px;
+        --primary-color: {primaryColor}; --highlight-bg: {highlightColor};
+        --highlight-text-color: {primaryColor}; --data-table--button-gap: 123px;
+        {"}"}
+        .p-progressbar-label{"{"}
+        color: {progressBarLabelColor} !important
+        {"}"}
+        .p-progressbar-value{"{"}
+        background: {primaryColor}!important
+        {"}"}
+        .p-rating-item.p-rating-item-active svg{"{"}
+        color: {primaryColor} !important
+        {"}"}
+        .p-fileupload-choose {"{"}
+        background: {primaryColor} !important; border: 1px solid {primaryColor}{" "}
+        !important;
+        {"}"}
+        .p-highlight.p-selectable-row {"{"}
+        background: {highlightColor} !important;
+        {"}"}
+        .p-checkbox-box.p-component, .p-radiobutton-box.p-component {"{"}
+        border-color: {primaryColor} !important;
+        {"}"}
+        .p-checkbox .p-checkbox-box.p-highlight, .p-radiobutton-box
+        .p-component.p-highlight {"{"}
+        background: {primaryColor} !important;
+        {"}"}
+        .p-checkbox.p-component.p-highlight {"{"}
+        background: {primaryColor} !important;
+        {"}"}
+        .p-checkbox-box.p-component.p-highlight.p-focus {"{"}
+        background: {primaryColor} !important; box-shadow: 0 0 0 0.2rem{" "}
+        {primaryColor} !important;
+        {"}"}
+        .p-checkbox-box.p-component.p-focus {"{"}
+        box-shadow: 0 0 0 0.2rem {primaryColor} !important;
+        {"}"}
+        .p-radiobutton .p-radiobutton-box.p-highlight {"{"}
+        background: {primaryColor} !important;
+        {"}"}
+        .p-radiobutton .p-radiobutton-box:not(.p-disabled).p-focus {"{"}
+        box-shadow: 0 0 0 0.2rem {highlightColor} !important;
+        {"}"}
+        {/* .p-radiobutton-box.p-component.p-focus {"{"}
+        background: {primaryColor} !important;
+        {"}"} */}
+        .p-datatable.p-datatable tr.p-highlight {"{"}
+        color: {primaryColor} !important;
+        {"}"}
+        .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {"{"}
+        background: {highlightColor} !important;
+        {"}"}
+        .p-link, p-link:focus {"{"}
+        color: {primaryColor} !important;
+        {"}"}
+        .p-link:focus{"{"}
+        box-shadow: 0 0 0 0.2rem {highlightColor} !important;
+        {"}"}
+        .p-inputtext:enabled:focus, .p-inputtext:enabled:hover {"{"}
+        border-color: {primaryColor};{"}"}
+        .p-inputtext:enabled:focus {"{"}
+        box-shadow: 0 0 0 0.2rem {primaryColor} !important;
+        {"}"}
+        .p-button.p-button-outlined.p-component:hover {"{"}
+        background: {highlightColor} !important;
+        {"}"}
+        .p-dropdown.p-component:hover {"{"}
+        border-color: {highlightColor};{"}"}
+        .p-dropdown.p-component.p-focus {"{"}
+        border-color: {highlightColor}; box-shadow: 0 0 0 0.2rem{" "}
+        {highlightColor} !important;
+        {"}"}
+        .p-dropdown-item.p-highlight {"{"}
+        color: {highlightColor} !important; background: {highlightColor}
+        !important;
+        {"}"}
+        .p-button:focus {"{"}
+        box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px {highlightColor}, 0 1px 2px 0
+        rgb(0, 0, 0);
+        {"}"}
+        .p-datatable .p-sortable-column.p-highlight {"{"}
+        color: {primaryColor} !important; background: {primaryColor}
+        !important; box-shadow: inset 0 0 0 0.2rem {primaryColor} !important;
+        {"}"}
+        .p-datatable .p-sortable-column.p-highlight .p-sortable-column-icon{" "}
+        {"{"}
+        color: {primaryColor} !important;
+        {"}"}
+        .p-toast-message-content {"{"}
+        color: {primaryColor};
+        {"}"}
+        .p-icon.p-toast-message-icon {"{"}
+        color: {primaryColor} !important;
+        {"}"}
+        .p-toast .p-toast-message.p-toast-message-info {"{"}
+        background: {highlightColor} !important;
+        color: {primaryColor} !important;
+        border-color: {primaryColor} !important;
+        border-width: 0 0 0 6px;
+        {"}"}
+        .p-selection-column, .p-editable-column {"{"}
+        vertical-align: middle !important;
+        {"}"}
+        .p-column-header-content {"{"}
+        justify-content: center !important;
+        {"}"}
+        .p-datatable-header div:first-child {"{"}
+        align-items: center !important;
+        {"}"}
+        .p-rating {"{"}
+        justify-content: center !important;
+        {"}"}
+        .p-button-label {"{"}
+        max-width: 8rem; overflow: hidden; text-overflow: ellipsis;
+        {"}"}
+        td[role="cell"] {"{"}
+        vertical-align: middle !important;
         {"}"}
       </style>
       <DataTable
