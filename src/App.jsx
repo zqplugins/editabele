@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { ProgressBar } from "primereact/progressbar";
@@ -32,7 +32,6 @@ import "./App.css";
  *     rowsPerPageOptions: Array,
  *     rows: number,
  *     emptyMessage: string,
- *     dragSelection: boolean
  *
  * }} optionsForPlugin
  * @returns {JSX.Element}
@@ -54,6 +53,7 @@ function App({
     rowsPerPageOptions,
     stripedRows,
     paginator,
+    editable,
     sortable,
     sortMode,
     sortField,
@@ -61,9 +61,7 @@ function App({
     multiple,
     emptyMessage,
     filter,
-    dragSelection,
     selectionMode,
-    editMode,
     showValueProgressBar,
     progressBarHeight,
     showAlert,
@@ -71,8 +69,8 @@ function App({
     alertFieldName,
     alertPosition,
     reviewsField,
-    primaryColor,
-    highlightColor,
+    primaryColor = "black",
+    highlightColor = "cfcfcf",
     progressBarLabelColor,
     progressBarField,
   } = optionsForPlugin;
@@ -84,11 +82,13 @@ function App({
   const [isInEditMode, setIsInEditMode] = useState(false);
   const dt = useRef(null);
   const [localColumns, setLocalColumns] = useState(columns);
+  const initialDataFetchedRef = useRef(false);
 
   useEffect(() => {
-    if (bubbleData.length === 0) return;
+    if (bubbleData.length === 0 || initialDataFetchedRef.current) return;
     /** @type {Array} */
     setData(bubbleData);
+    initialDataFetchedRef.current = true;
   }, [bubbleData]);
 
   useEffect(() => {
@@ -123,11 +123,11 @@ function App({
 
   const onRowSelect = (event) => {
     const requiredKey = Object.keys(event.data).find((key) =>
-      key.includes(alertFieldName)
+      key?.includes(alertFieldName)
     );
 
-    if (requiredKey) {
-      toast?.current.show({
+    if (requiredKey && toast?.current) {
+      toast.current.show({
         severity: "info",
         summary: "Record selected",
         detail: `Name: ${event.data[requiredKey]}`,
@@ -139,11 +139,11 @@ function App({
 
   const onRowUnselect = (event) => {
     const requiredKey = Object.keys(event.data).find((key) =>
-      key.includes(alertFieldName)
+      key?.includes(alertFieldName)
     );
 
-    if (requiredKey) {
-      toast?.current.show({
+    if (requiredKey && toast?.current) {
+      toast.current.show({
         severity: "info",
         summary: "Record unselected",
         detail: `Name: ${event.data[requiredKey]}`,
@@ -186,15 +186,43 @@ function App({
     setIsInEditMode(true);
   };
 
-  const onRowEditComplete = (e) => {
+  const onRowEditComplete = async (e) => {
+    let { newData } = e;
     let _data = [...data];
-    let { newData, index } = e;
 
-    _data[index] = newData;
+    const isAdding = newData._id.startsWith("--internal");
 
-    setData(_data);
+    if (isAdding) {
+      const response = await onChangeListener(newData);
+      const { id } = response || {};
+      if (id) {
+        newData._id = id;
+        _data.push(newData);
+      }
+    } else {
+      const indexOfEditedObject = data.findIndex(
+        (object) => object._id === newData._id
+      );
+      _data[indexOfEditedObject] = newData;
+      await onChangeListener(newData);
+    }
 
-    onChangeListener(newData, _data);
+    if (sortable) {
+      _data.sort((a, b) => a[sortField] - b[sortField]);
+    }
+
+    // Remove duplicates based on _id before setting the data
+    const uniqueData = _data.reduce((acc, current) => {
+      const x = acc.find((item) => item._id === current._id);
+      if (!x) {
+        return acc.concat([current]);
+      } else {
+        // update existing item with the latest data
+        return acc.map((item) => (item._id === current._id ? current : item));
+      }
+    }, []);
+
+    setData(uniqueData);
     setIsInEditMode(false);
   };
 
@@ -336,8 +364,11 @@ function App({
     ProgressBar: (field, options) => {
       return (
         <InputNumber
-          value={options.value}
-          onValueChange={(e) => options.editorCallback(e.value)}
+          value={options.value < 100 ? options.value : 100}
+          onValueChange={(e) => {
+            const value = e.value < 100 ? e.value : 100;
+            options.editorCallback(value);
+          }}
         />
       );
     },
@@ -388,10 +419,15 @@ function App({
 
   const bodyTemplateByType = {
     image: (field, element) => {
+      const maxHeightMap = {
+        small: "3rem",
+        medium: "4rem",
+        large: "5rem",
+      };
       return (
         <img
           src={element[field]}
-          style={{ maxHeight: "4rem" }}
+          style={{ maxHeight: maxHeightMap[size] }}
           className="w-6rem shadow-2 border-round"
         />
       );
@@ -399,7 +435,7 @@ function App({
     ProgressBar: (field, element) => {
       return (
         <ProgressBar
-          value={element[field]}
+          value={element[field] < 100 ? element[field] : 100}
           showValue={showValueProgressBar}
           style={{
             height: `${progressBarHeight}px`,
@@ -442,7 +478,7 @@ function App({
   };
 
   return (
-    <div className="card" style={{ height: "100%" }}>
+    <div className="card" style={{ position: "relative" }}>
       {showAlert && (
         <Toast color={primaryColor} ref={toast} position={alertPosition} />
       )}
@@ -490,9 +526,6 @@ function App({
         .p-radiobutton .p-radiobutton-box:not(.p-disabled).p-focus {"{"}
         box-shadow: 0 0 0 0.2rem {highlightColor} !important;
         {"}"}
-        {/* .p-radiobutton-box.p-component.p-focus {"{"}
-        background: {primaryColor} !important;
-        {"}"} */}
         .p-datatable.p-datatable tr.p-highlight {"{"}
         color: {primaryColor} !important;
         {"}"}
@@ -528,24 +561,18 @@ function App({
         rgb(0, 0, 0);
         {"}"}
         .p-datatable .p-sortable-column.p-highlight {"{"}
-        color: {primaryColor} !important; background: {primaryColor}
-        !important; box-shadow: inset 0 0 0 0.2rem {primaryColor} !important;
-        {"}"}
-        .p-datatable .p-sortable-column.p-highlight .p-sortable-column-icon{" "}
-        {"{"}
-        color: {primaryColor} !important;
+        color: {primaryColor} !important; !important; box-shadow: inset 0 0 0
+        0.2rem {primaryColor} !important;
         {"}"}
         .p-toast-message-content {"{"}
-        color: {primaryColor};
-        {"}"}
+        color: {primaryColor};{"}"}
         .p-icon.p-toast-message-icon {"{"}
         color: {primaryColor} !important;
         {"}"}
         .p-toast .p-toast-message.p-toast-message-info {"{"}
-        background: {highlightColor} !important;
-        color: {primaryColor} !important;
-        border-color: {primaryColor} !important;
-        border-width: 0 0 0 6px;
+        background: {highlightColor} !important; color: {primaryColor}{" "}
+        !important; border-color: {primaryColor} !important; border-width: 0 0 0
+        6px;
         {"}"}
         .p-selection-column, .p-editable-column {"{"}
         vertical-align: middle !important;
@@ -565,10 +592,24 @@ function App({
         td[role="cell"] {"{"}
         vertical-align: middle !important;
         {"}"}
+        .p-row-editor-init.p-link,
+        .p-button.p-component.p-button-icon-only.p-button-text.p-button-rounded.p-button-danger{" "}
+        {"{"}
+        margin: auto; display: flex;
+        {"}"}
+        .p-editable-column img {"{"}
+        object-fit: cover;
+        {"}"}
+        .p-toast {"{"}
+        position: absolute !important;
+        {"}"}
+        .p-checkbox.p-component, .p-radiobutton.p-component {"{"}
+        display: flex; margin: auto;
+        {"}"}
       </style>
       <DataTable
         ref={dt}
-        tableStyle={{ minWidth: "50rem" }}
+        tableStyle={{ minWidth: "50rem", height: "unset" }}
         resizableColumns
         size={size}
         value={data}
@@ -591,18 +632,18 @@ function App({
             ? selectionMode
             : null
         }
-        dragSelection={dragSelection === true}
         emptyMessage={emptyMessage ? emptyMessage : "No results found"}
         selection={isInEditMode ? null : selectedData}
         onRowSelect={onRowSelect}
         onRowUnselect={onRowUnselect}
         metaKeySelection={true}
-        editMode={editMode}
+        editMode={"row"}
         onRowEditInit={onRowEditInit}
         onRowEditComplete={onRowEditComplete}
         dataKey="_id"
         editingRows={editingRows}
         onRowEditChange={(event) => {
+          setIsInEditMode(() => !isInEditMode);
           setEditingRows(event.data);
         }}
       >
@@ -616,29 +657,34 @@ function App({
         {localColumns.map(({ field, header, type }, index) =>
           createColumn({ field, header, type }, index)
         )}
-        <Column
-          key="edit-row"
-          rowEditor
-          bodyStyle={{ textAlign: "left" }}
-        ></Column>
-        <Column
-          key="delete-row"
-          body={({ _id }) => (
-            <Button
-              icon="pi pi-times"
-              rounded
-              text
-              onClick={() => {
-                setData((prevData) =>
-                  prevData.filter((item) => item._id !== _id)
-                );
-                onDelete(_id);
-              }}
-              severity="danger"
-              aria-label="Cancel"
-            />
-          )}
-        />
+
+        {editable && (
+          <Column
+            key="edit-row"
+            rowEditor
+            bodyStyle={{ textAlign: "left" }}
+          ></Column>
+        )}
+        {editable && (
+          <Column
+            key="delete-row"
+            body={({ _id }) => (
+              <Button
+                icon="pi pi-times"
+                rounded
+                text
+                onClick={() => {
+                  setData((prevData) =>
+                    prevData.filter((item) => item._id !== _id)
+                  );
+                  onDelete(_id);
+                }}
+                severity="danger"
+                aria-label="Cancel"
+              />
+            )}
+          />
+        )}
       </DataTable>
     </div>
   );
