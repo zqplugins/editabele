@@ -69,8 +69,8 @@ function App({
     alertFieldName,
     alertPosition,
     reviewsField,
-    primaryColor = "black",
-    highlightColor = "cfcfcf",
+    primaryColor = "red",
+    highlightColor = "grey",
     progressBarLabelColor,
     progressBarField,
   } = optionsForPlugin;
@@ -193,17 +193,9 @@ function App({
     const isAdding = newData._id.startsWith("--internal");
 
     if (isAdding) {
-      const response = await onChangeListener(newData);
-      const { id } = response || {};
-      if (id) {
-        newData._id = id;
-        _data.push(newData);
-      }
+      await onChangeListener(newData);
+      _data.push(newData);
     } else {
-      const indexOfEditedObject = data.findIndex(
-        (object) => object._id === newData._id
-      );
-      _data[indexOfEditedObject] = newData;
       await onChangeListener(newData);
     }
 
@@ -211,16 +203,25 @@ function App({
       _data.sort((a, b) => a[sortField] - b[sortField]);
     }
 
-    // Remove duplicates based on _id before setting the data
+    if (!isAdding) {
+      const indexOfEditedObject = _data.findIndex(
+        (object) => object._id === newData._id
+      );
+      _data[indexOfEditedObject] = newData;
+    }
+
     const uniqueData = _data.reduce((acc, current) => {
       const x = acc.find((item) => item._id === current._id);
       if (!x) {
         return acc.concat([current]);
       } else {
-        // update existing item with the latest data
         return acc.map((item) => (item._id === current._id ? current : item));
       }
     }, []);
+
+    if (sortable) {
+      uniqueData.sort((a, b) => a[sortField] - b[sortField]);
+    }
 
     setData(uniqueData);
     setIsInEditMode(false);
@@ -553,7 +554,7 @@ function App({
         {highlightColor} !important;
         {"}"}
         .p-dropdown-item.p-highlight {"{"}
-        color: {highlightColor} !important; background: {highlightColor}
+        background: {highlightColor}
         !important;
         {"}"}
         .p-button:focus {"{"}
@@ -563,6 +564,9 @@ function App({
         .p-datatable .p-sortable-column.p-highlight {"{"}
         color: {primaryColor} !important; !important; box-shadow: inset 0 0 0
         0.2rem {primaryColor} !important;
+        {"}"}
+        .p-datatable .p-sortable-column.p-highlight svg {"{"}
+        color: {primaryColor} !important; !important;
         {"}"}
         .p-toast-message-content {"{"}
         color: {primaryColor};{"}"}
