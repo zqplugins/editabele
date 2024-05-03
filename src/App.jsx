@@ -286,7 +286,7 @@ function App({
             onClick={() => exportCSV(false)}
             data-pr-tooltip="CSV"
           />
-          <Button
+          {editable && <Button
             type="button"
             icon="pi pi-plus"
             style={{
@@ -310,7 +310,7 @@ function App({
               });
             }}
             data-pr-tooltip="add"
-          />
+          />}
         </div>
       </div>
       <div className="flex gap-2">
