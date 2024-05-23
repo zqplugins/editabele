@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useContext } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { ProgressBar } from "primereact/progressbar";
@@ -12,15 +12,21 @@ import { FilterMatchMode, FilterOperator } from "primereact/api";
 import { InputText } from "primereact/inputtext";
 import { InputNumber } from "primereact/inputnumber";
 import { Calendar } from "primereact/calendar";
-import { getTitlesForEmptyColumns } from "./functions";
 import { FileUpload } from "primereact/fileupload";
 import "./App.css";
+import {getDataFromDatabase} from "./getDataFromDatabase";
+import {getColumnsForReact} from "./getColumnsForReact";
+import {updatedData} from "./UpdateOrAddObject";
+import {deleteData} from "./DeleteDataFromDataBase";
 
 /**
  * @param {(editedRowData, allData) => void} onChangeListener
  * @param {Array<{header: string; field: string; type: string}>} columns
  * @param {Array<{[key: string]: any}>} data
  * @param {{
+ *     databaseTableName: string;
+ *     progressBarField: string;
+ *     reviewsField: string;
  *     headerText: string;
  *     footerText: string;
  *     showGridlines: boolean;
@@ -38,13 +44,14 @@ import "./App.css";
  * @constructor
  */
 function App({
-  columns,
-  data: bubbleData,
   optionsForPlugin,
   onDelete,
   onChangeListener,
 }) {
   const {
+    databaseTableName,
+    progressBarField,
+    reviewsField,
     size,
     headerText,
     footerText,
@@ -65,24 +72,36 @@ function App({
     showValueProgressBar,
     progressBarHeight,
     showAlert,
-    databaseTableName,
     alertFieldName,
     alertPosition,
-    reviewsField,
     primaryColor = "red",
     highlightColor = "grey",
     progressBarLabelColor,
-    progressBarField,
   } = optionsForPlugin;
 
+  const [bubbleData, setBubbleData] = useState([]);
   const [selectedData, setSelectedData] = useState([]);
   const [editingRows, setEditingRows] = useState({});
   const toast = useRef(null);
   const [data, setData] = useState([]);
   const [isInEditMode, setIsInEditMode] = useState(false);
   const dt = useRef(null);
-  const [localColumns, setLocalColumns] = useState(columns);
+  const [localColumns, setLocalColumns] = useState([]);
   const initialDataFetchedRef = useRef(false);
+
+  /**
+   * todo: de scris coment ce face
+   */
+
+  useEffect(() => {
+    getColumnsForReact(databaseTableName, progressBarField, reviewsField).then((columns) => {
+      setLocalColumns(columns);
+    });
+    getDataFromDatabase(databaseTableName).then((data) => {
+      setBubbleData(data);
+    })
+  }, [databaseTableName, progressBarField, reviewsField]);
+
 
   useEffect(() => {
     if (bubbleData.length === 0 || initialDataFetchedRef.current) return;
@@ -91,18 +110,6 @@ function App({
     initialDataFetchedRef.current = true;
   }, [bubbleData]);
 
-  useEffect(() => {
-    if (localColumns.length > 0) return;
-    if (!databaseTableName) return;
-
-    getTitlesForEmptyColumns(
-      databaseTableName,
-      reviewsField,
-      progressBarField
-    ).then((emptyColumns) => {
-      setLocalColumns(emptyColumns);
-    });
-  }, [localColumns, databaseTableName]);
 
   const [filters, setFilters] = useState({
     global: { value: "", matchMode: FilterMatchMode.CONTAINS },
@@ -161,13 +168,14 @@ function App({
       return "Missing date";
     }
 
-    if (!isNaN(new Date(value))) {
+    if (isNaN(new Date(value))) {
       return "Invalid date";
     }
 
     return format(new Date(value), "yyyy/MM/dd");
   };
 
+  //todo: coment
   const getFileContentBase64 = (file) => {
     return new Promise(async (resolve) => {
       // convert file to base64 encoded
@@ -223,6 +231,8 @@ function App({
       uniqueData.sort((a, b) => a[sortField] - b[sortField]);
     }
 
+    updatedData(databaseTableName, newData);
+
     setData(uniqueData);
     setIsInEditMode(false);
   };
@@ -247,7 +257,7 @@ function App({
         operator: FilterOperator.AND,
         constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }],
       },
-      "country.name": {
+      "population.name": {
         operator: FilterOperator.AND,
         constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }],
       },
@@ -373,7 +383,7 @@ function App({
         />
       );
     },
-    booleanForm: (field, options) => {
+    boolean: (field, options) => {
       const value =
         typeof options.value === "object"
           ? options.value
@@ -408,9 +418,11 @@ function App({
           onSelect={async (event) => {
             const selectedFile = event.files[0];
             const base64Data = await getFileContentBase64(selectedFile);
+            const [base64Prefix, base64Content] = base64Data.split(',', 2);
             options.editorCallback({
-              name: selectedFile.name,
-              data: base64Data,
+              filename: selectedFile.name,
+              contents: base64Content,
+              prefix: base64Prefix,
             });
           }}
         />
@@ -425,9 +437,14 @@ function App({
         medium: "4rem",
         large: "5rem",
       };
+
+      const url = element[field]?.contents
+        ? `${element[field].prefix},${element[field].contents}`
+        : element[field];
+
       return (
         <img
-          src={element[field]}
+          src={url}
           style={{ maxHeight: maxHeightMap[size] }}
           className="w-6rem shadow-2 border-round"
         />
@@ -436,7 +453,7 @@ function App({
     ProgressBar: (field, element) => {
       return (
         <ProgressBar
-          value={element[field] < 100 ? element[field] : 100}
+          value={element[field]}
           showValue={showValueProgressBar}
           style={{
             height: `${progressBarHeight}px`,
@@ -444,7 +461,7 @@ function App({
         ></ProgressBar>
       );
     },
-    booleanForm: (field, element) => {
+    boolean: (field, element) => {
       return (
         <i
           className={classNames("pi", {
@@ -485,130 +502,10 @@ function App({
       )}
       <style>
         :root {"{"}
-        --primary-color: {primaryColor}; --highlight-bg: {highlightColor};
-        --highlight-text-color: {primaryColor}; --data-table--button-gap: 123px;
-        {"}"}
-        .p-progressbar-label{"{"}
-        color: {progressBarLabelColor} !important
-        {"}"}
-        .p-progressbar-value{"{"}
-        background: {primaryColor}!important
-        {"}"}
-        .p-rating-item.p-rating-item-active svg{"{"}
-        color: {primaryColor} !important
-        {"}"}
-        .p-fileupload-choose {"{"}
-        background: {primaryColor} !important; border: 1px solid {primaryColor}{" "}
-        !important;
-        {"}"}
-        .p-highlight.p-selectable-row {"{"}
-        background: {highlightColor} !important;
-        {"}"}
-        .p-checkbox-box.p-component, .p-radiobutton-box.p-component {"{"}
-        border-color: {primaryColor} !important;
-        {"}"}
-        .p-checkbox .p-checkbox-box.p-highlight, .p-radiobutton-box
-        .p-component.p-highlight {"{"}
-        background: {primaryColor} !important;
-        {"}"}
-        .p-checkbox.p-component.p-highlight {"{"}
-        background: {primaryColor} !important;
-        {"}"}
-        .p-checkbox-box.p-component.p-highlight.p-focus {"{"}
-        background: {primaryColor} !important; box-shadow: 0 0 0 0.2rem{" "}
-        {primaryColor} !important;
-        {"}"}
-        .p-checkbox-box.p-component.p-focus {"{"}
-        box-shadow: 0 0 0 0.2rem {primaryColor} !important;
-        {"}"}
-        .p-radiobutton .p-radiobutton-box.p-highlight {"{"}
-        background: {primaryColor} !important;
-        {"}"}
-        .p-radiobutton .p-radiobutton-box:not(.p-disabled).p-focus {"{"}
-        box-shadow: 0 0 0 0.2rem {highlightColor} !important;
-        {"}"}
-        .p-datatable.p-datatable tr.p-highlight {"{"}
-        color: {primaryColor} !important;
-        {"}"}
-        .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {"{"}
-        background: {highlightColor} !important;
-        {"}"}
-        .p-link, p-link:focus {"{"}
-        color: {primaryColor} !important;
-        {"}"}
-        .p-link:focus{"{"}
-        box-shadow: 0 0 0 0.2rem {highlightColor} !important;
-        {"}"}
-        .p-inputtext:enabled:focus, .p-inputtext:enabled:hover {"{"}
-        border-color: {primaryColor};{"}"}
-        .p-inputtext:enabled:focus {"{"}
-        box-shadow: 0 0 0 0.2rem {primaryColor} !important;
-        {"}"}
-        .p-button.p-button-outlined.p-component:hover {"{"}
-        background: {highlightColor} !important;
-        {"}"}
-        .p-dropdown.p-component:hover {"{"}
-        border-color: {highlightColor};{"}"}
-        .p-dropdown.p-component.p-focus {"{"}
-        border-color: {highlightColor}; box-shadow: 0 0 0 0.2rem{" "}
-        {highlightColor} !important;
-        {"}"}
-        .p-dropdown-item.p-highlight {"{"}
-        background: {highlightColor}
-        !important;
-        {"}"}
-        .p-button:focus {"{"}
-        box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px {highlightColor}, 0 1px 2px 0
-        rgb(0, 0, 0);
-        {"}"}
-        .p-datatable .p-sortable-column.p-highlight {"{"}
-        color: {primaryColor} !important; !important; box-shadow: inset 0 0 0
-        0.2rem {primaryColor} !important;
-        {"}"}
-        .p-datatable .p-sortable-column.p-highlight svg {"{"}
-        color: {primaryColor} !important; !important;
-        {"}"}
-        .p-toast-message-content {"{"}
-        color: {primaryColor};{"}"}
-        .p-icon.p-toast-message-icon {"{"}
-        color: {primaryColor} !important;
-        {"}"}
-        .p-toast .p-toast-message.p-toast-message-info {"{"}
-        background: {highlightColor} !important; color: {primaryColor}{" "}
-        !important; border-color: {primaryColor} !important; border-width: 0 0 0
-        6px;
-        {"}"}
-        .p-selection-column, .p-editable-column {"{"}
-        vertical-align: middle !important;
-        {"}"}
-        .p-column-header-content {"{"}
-        justify-content: center !important;
-        {"}"}
-        .p-datatable-header div:first-child {"{"}
-        align-items: center !important;
-        {"}"}
-        .p-rating {"{"}
-        justify-content: center !important;
-        {"}"}
-        .p-button-label {"{"}
-        max-width: 8rem; overflow: hidden; text-overflow: ellipsis;
-        {"}"}
-        td[role="cell"] {"{"}
-        vertical-align: middle !important;
-        {"}"}
-        .p-row-editor-init.p-link,
-        .p-button.p-component.p-button-icon-only.p-button-text.p-button-rounded.p-button-danger{" "}
-        {"{"}
-        margin: auto; display: flex;
-        {"}"}
-        .p-editable-column img {"{"}
-        object-fit: cover;
-        {"}"}
-        .p-toast {"{"}
-        position: absolute !important;
-        {"}"}
-        .p-checkbox.p-component, .p-radiobutton.p-component {"{"}
-        display: flex; margin: auto;
+        --primary-color: {primaryColor};
+        --highlight-bg: {highlightColor};
+        --highlight-text-color: {primaryColor};
+        --data-table--button-gap: 123px;
         {"}"}
       </style>
       <DataTable
@@ -678,10 +575,13 @@ function App({
                 rounded
                 text
                 onClick={() => {
+
                   setData((prevData) =>
+
                     prevData.filter((item) => item._id !== _id)
                   );
                   onDelete(_id);
+                  deleteData(databaseTableName,_id)
                 }}
                 severity="danger"
                 aria-label="Cancel"

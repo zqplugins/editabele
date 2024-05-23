@@ -1,12 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import {
-  getApiEndpoint,
-  getColumnsForReact,
-  getValuesForReact,
-  filterOutUnsupportedNames,
-  getTitlesForEmptyColumns,
-} from "./functions";
+
 
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.css";
@@ -19,8 +13,6 @@ function initializeTable(container) {
   const root = ReactDOM.createRoot(container);
 
   const defaults = {
-    columns: [],
-    data: [],
     onDelete: () => {},
     onChangeListener: () => {},
     optionsForPlugin: {},
@@ -38,13 +30,6 @@ function initializeTable(container) {
 
   return {
     updateData,
-    functions: {
-      getApiEndpoint,
-      getColumnsForReact,
-      getValuesForReact,
-      filterOutUnsupportedNames,
-      getTitlesForEmptyColumns,
-    },
   };
 }
 
