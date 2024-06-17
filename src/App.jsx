@@ -14,6 +14,7 @@ import { InputNumber } from "primereact/inputnumber";
 import { Calendar } from "primereact/calendar";
 import { FileUpload } from "primereact/fileupload";
 import "./App.css";
+import "./dynamic-styles.css"
 import {getDataFromDatabase} from "./getDataFromDatabase";
 import {getColumnsForReact} from "./getColumnsForReact";
 import {updatedData} from "./UpdateOrAddObject";
@@ -38,6 +39,17 @@ import {deleteData} from "./DeleteDataFromDataBase";
  *     rowsPerPageOptions: Array,
  *     rows: number,
  *     emptyMessage: string,
+ *     paddingV: Number,
+ *     paddingH: Number,
+ *     border_radius: Number,
+  *    fontSize: Number,
+  *    fontAlignment: String,
+  *    fontFamily: String,
+ *     fontWeight: Number,
+ *     fontColor: String,
+ *     rating_color: String,
+ *     rating_hover_color: String,
+ *     fontAlignmentBody: String
  *
  * }} optionsForPlugin
  * @returns {JSX.Element}
@@ -74,13 +86,26 @@ function App({
     showAlert,
     alertFieldName,
     alertPosition,
-    primaryColor = "red",
-    highlightColor = "grey",
+    primaryColor,
+    highlightColor,
     progressBarLabelColor,
+    paddingV,
+    paddingH,
+    border_radius,
+    fontSize,
+    fontAlignment,
+    fontAlignmentBody,
+    FontFace,
+    fontFamily,
+    fontWeight,
+    fontColor,
+    rating_color,
+    rating_hover_color,
   } = optionsForPlugin;
 
   const [bubbleData, setBubbleData] = useState([]);
   const [selectedData, setSelectedData] = useState([]);
+  const [frozenData, setFrozenData] = useState([]);
   const [editingRows, setEditingRows] = useState({});
   const toast = useRef(null);
   const [data, setData] = useState([]);
@@ -125,8 +150,24 @@ function App({
     },
     {
       name: "false",
-    },
+    }
   ];
+
+  function changeRgbaAlpha(rgba, newAlpha) {
+    let rgbaComponents = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*(\d*\.?\d+)?\)/);
+
+    if (rgbaComponents) {
+      let r = rgbaComponents[1];
+      let g = rgbaComponents[2];
+      let b = rgbaComponents[3];
+      let a = newAlpha; // Noua valoare alfa
+
+      return `rgba(${r}, ${g}, ${b}, ${a})`;
+    } else {
+      throw new Error("Culoarea nu este într-un format RGBA valid");
+    }
+  }
+
 
   const onRowSelect = (event) => {
     const requiredKey = Object.keys(event.data).find((key) =>
@@ -138,7 +179,7 @@ function App({
         severity: "info",
         summary: "Record selected",
         detail: `Name: ${event.data[requiredKey]}`,
-        life: 3000,
+        life: 100000,
       });
     }
     setSelectedData((prevData) => [event.data, ...prevData]);
@@ -164,9 +205,6 @@ function App({
   const footer = footerText;
 
   const formatDate = (value) => {
-    if (!value) {
-      return "Missing date";
-    }
 
     if (isNaN(new Date(value))) {
       return "Invalid date";
@@ -200,11 +238,9 @@ function App({
 
     const isAdding = newData._id.startsWith("--internal");
 
+    await onChangeListener(newData);
     if (isAdding) {
-      await onChangeListener(newData);
-      _data.push(newData);
-    } else {
-      await onChangeListener(newData);
+      _data.unshift(newData);
     }
 
     if (sortable) {
@@ -227,13 +263,20 @@ function App({
       }
     }, []);
 
+
     if (sortable) {
       uniqueData.sort((a, b) => a[sortField] - b[sortField]);
     }
 
-    updatedData(databaseTableName, newData);
 
-    setData(uniqueData);
+    const tempId = newData._id;
+    const newDataId = await updatedData(databaseTableName, newData);
+    newData._id = newDataId;
+
+    setData(_data);
+    setFrozenData((prevData) =>
+        prevData.filter((item) => item._id !== tempId)
+    );
     setIsInEditMode(false);
   };
 
@@ -286,40 +329,32 @@ function App({
         <span className="">{headerText}</span>
         <div className="flex gap-2">
           <Button
-            type="button"
-            icon="pi pi-file"
-            style={{
-              backgroundColor: "var(--primary-color)",
-              border: `0.1rem solid ${"var(--primary-color)"}`,
-            }}
-            rounded
-            onClick={() => exportCSV(false)}
-            data-pr-tooltip="CSV"
+              type="button"
+              icon="pi pi-download"
+              rounded
+              onClick={() => exportCSV(false)}
+              data-pr-tooltip="CSV"
           />
           {editable && <Button
-            type="button"
-            icon="pi pi-plus"
-            style={{
-              backgroundColor: "var(--primary-color)",
-              border: `0.1rem solid ${"var(--primary-color)"}`,
-            }}
-            rounded
-            onClick={() => {
-              const newTempId = `--internal-${new Date().getTime()}`;
-              const newTempObject = {
-                _id: newTempId,
-              };
-
-              setData((prevData) => [newTempObject, ...prevData]);
-
-              setEditingRows((oldEditingRows) => {
-                return {
-                  ...oldEditingRows,
-                  [newTempId]: true,
+              type="button"
+              icon="pi pi-plus"
+              rounded
+              onClick={() => {
+                const newTempId = `--internal-${new Date().getTime()}`;
+                const newTempObject = {
+                  _id: newTempId,
                 };
-              });
-            }}
-            data-pr-tooltip="add"
+
+                setFrozenData((prevData) => [newTempObject, ...prevData]);
+
+                setEditingRows((oldEditingRows) => {
+                  return {
+                    ...oldEditingRows,
+                    [newTempId]: true,
+                  };
+                });
+              }}
+              data-pr-tooltip="add"
           />}
         </div>
       </div>
@@ -328,13 +363,12 @@ function App({
           type="button"
           icon="pi pi-filter-slash"
           label="Clear"
-          outlined
-          style={{ color: "var(--primary-color)" }}
           onClick={clearFilter}
+          size="small"
         />
         <span className="p-input-icon-left">
-          <i className="pi pi-search" />
-          <InputText
+          <i style={{"fontFamily": 'primeicons'}} className="pi pi-search" />
+          <InputText className='w-14rem'
             type="search"
             value={filters.global.value}
             onChange={onGlobalFilterChange}
@@ -342,13 +376,14 @@ function App({
           />
         </span>
       </div>
+
     </>
   );
 
   const editByType = {
     text: (field, options) => {
       return (
-        <InputText
+        <InputText className="w-full md:w-10rem"
           type="text"
           value={options.value}
           onChange={(e) => options.editorCallback(e.target.value)}
@@ -375,19 +410,16 @@ function App({
     ProgressBar: (field, options) => {
       return (
         <InputNumber
-          value={options.value < 100 ? options.value : 100}
+          value={options.value <= 100 ? options.value : 0}
           onValueChange={(e) => {
-            const value = e.value < 100 ? e.value : 100;
+            const value = e.value <= 100 ? e.value : 0;
             options.editorCallback(value);
           }}
         />
       );
     },
     boolean: (field, options) => {
-      const value =
-        typeof options.value === "object"
-          ? options.value
-          : booleanValue.find(({ name }) => name === String(options.value));
+      const value = booleanValue.find(({ name }) => name === String(options.value));
 
       return (
         <Dropdown
@@ -396,7 +428,7 @@ function App({
           onChange={(e) => options.editorCallback(e.value.name === "true")}
           placeholder="Select a Status"
           optionLabel="name"
-          className="w-full md:w-14rem"
+          className="w-full md:w-8rem"
         />
       );
     },
@@ -413,8 +445,8 @@ function App({
       return (
         <FileUpload
           mode="basic"
-          accept="image/*"
-          maxFileSize={1_000_000}
+          name="demo[]"
+          type="file"
           onSelect={async (event) => {
             const selectedFile = event.files[0];
             const base64Data = await getFileContentBase64(selectedFile);
@@ -463,16 +495,20 @@ function App({
     },
     boolean: (field, element) => {
       return (
-        <i
+        <i style={{'fontFamily':'primeicons'}}
           className={classNames("pi", {
             "text-green-500 pi-check-circle": element[field],
-            "text-red-500 pi-times-circle": !element[field],
-          })}
+            "text-red-500 pi-times-circle": element[field] === false,
+            "": !element[field]
+          })
+        }
         ></i>
       );
     },
     date: (field, element) => {
-      return formatDate(element[field]);
+      return element[field]
+        ? formatDate(element[field])
+        : '';
     },
     reviews: (field, element) => {
       return <Rating value={element[field]} readOnly cancel={false} />;
@@ -482,12 +518,12 @@ function App({
   const createColumn = ({ field, header, type }, index) => {
     return (
       <Column
-        bodyClassName="text-center"
+        bodyClassName={`text-`+ fontAlignmentBody}
         key={field}
         columnKey={field}
         field={field}
         header={header}
-        sortable={sortable === true}
+        sortable={ !isInEditMode && sortable === true}
         rowEditor={false}
         editor={field === "_id" ? null : editByType[type]?.bind(this, field)}
         body={bodyTemplateByType[type]?.bind(this, field)}
@@ -498,22 +534,34 @@ function App({
   return (
     <div className="card" style={{ position: "relative" }}>
       {showAlert && (
-        <Toast color={primaryColor} ref={toast} position={alertPosition} />
+        <Toast color={'red'} ref={toast} position={alertPosition} />
       )}
       <style>
         :root {"{"}
-        --primary-color: {primaryColor};
-        --highlight-bg: {highlightColor};
-        --highlight-text-color: {primaryColor};
-        --data-table--button-gap: 123px;
+        --progress-bar-label-color: {progressBarLabelColor};
+        --buttonsColor: {primaryColor};
+        --highlight-color: {highlightColor};
+        --highlight-color-transparent: {changeRgbaAlpha(highlightColor, 0.1)};
+        --paddingV:{paddingV}px;
+        --paddingH: {paddingH}px;
+        --borderRadius: {border_radius}px;
+        --faceSize: {fontSize};
+        --FontFace: {fontFamily};
+        --fontWeight: {fontWeight};
+        --fontColor: {fontColor};
+        --fontAlignment: {fontAlignment};
+        --rating_color: {rating_color};
+        --rating_hover_color: {rating_hover_color};
         {"}"}
       </style>
       <DataTable
         ref={dt}
+        className="zq-data-table"
         tableStyle={{ minWidth: "50rem", height: "unset" }}
         resizableColumns
         size={size}
         value={data}
+        frozenValue={frozenData}
         header={header}
         footer={footer}
         showGridlines={showGridlines === true}
@@ -521,8 +569,8 @@ function App({
         paginator={paginator === true}
         rowsPerPageOptions={rowsPerPageOptions}
         rows={rows}
-        sortField={sortField === true}
-        removableSort={removableSort === true}
+        sortField={sortField === false}
+        removableSort={ removableSort === true}
         multiple={multiple === true}
         sortMode={sortMode ? "multiple" : null}
         filters={filter === true ? filters : null}
@@ -534,10 +582,10 @@ function App({
             : null
         }
         emptyMessage={emptyMessage ? emptyMessage : "No results found"}
-        selection={isInEditMode ? null : selectedData}
+        selection={isInEditMode || selectionMode === 'none' ? null : selectedData}
         onRowSelect={onRowSelect}
         onRowUnselect={onRowUnselect}
-        metaKeySelection={true}
+        metaKeySelection={false}
         editMode={"row"}
         onRowEditInit={onRowEditInit}
         onRowEditComplete={onRowEditComplete}
@@ -549,11 +597,15 @@ function App({
         }}
       >
         {!isInEditMode && selectionMode && (
-          <Column
-            key="select-row"
-            selectionMode={selectionMode}
-            headerStyle={{ width: "3rem" }}
-          ></Column>
+            <Column
+              style={{ width: 0 }}
+              key="select-row"
+              selectionMode={selectionMode}
+              body={(...args)=>(
+                  <div
+                    >hello{JSON.stringify(args)}</div>
+              )}
+            ></Column>
         )}
         {localColumns.map(({ field, header, type }, index) =>
           createColumn({ field, header, type }, index)
@@ -563,28 +615,36 @@ function App({
           <Column
             key="edit-row"
             rowEditor
-            bodyStyle={{ textAlign: "left" }}
+            style={{ width: 0 }}
+              // bodyStyle={{ textAlign: "left" }}
           ></Column>
         )}
         {editable && (
           <Column
             key="delete-row"
+            style={{ width: 0 }}
             body={({ _id }) => (
               <Button
                 icon="pi pi-times"
+                style={{'fontFamily':'primeicons', width: '2rem', height: '2rem'}}
                 rounded
                 text
                 onClick={() => {
-
-                  setData((prevData) =>
-
-                    prevData.filter((item) => item._id !== _id)
-                  );
-                  onDelete(_id);
-                  deleteData(databaseTableName,_id)
+                  if (_id.includes('--internal')) {
+                    setFrozenData((prevData) =>
+                        prevData.filter((item) => item._id !== _id)
+                    );
+                  } else {
+                    setData((prevData) =>
+                        prevData.filter((item) => item._id !== _id)
+                    );
+                    onDelete(_id);
+                    deleteData(databaseTableName, _id);
+                  }
                 }}
                 severity="danger"
                 aria-label="Cancel"
+                Cancel
               />
             )}
           />

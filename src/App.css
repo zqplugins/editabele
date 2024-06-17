@@ -52,15 +52,4 @@
   text-transform: capitalize;
 }
 
-/*
 
-.data-table--header--wrapper {
-  display: flex;
-  justify-content: space-between;
-}
-
-.data-table--header--controls {
-  display: flex;
-  gap: var(--data-table--button-gap);
-}
-*/

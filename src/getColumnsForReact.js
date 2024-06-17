@@ -43,7 +43,7 @@ export async function getColumnNameFromBubble(tableName){
 export async function getColumnsForReact( databaseTableName, progressBarField, reviewsField) {
 
     const fields = await getColumnNameFromBubble(databaseTableName);
-    const ignoreField = ["_id", "Slug", "Modified Date", "Created By", "unique ID"];
+    const ignoreField = ["_id", "Slug", "Modified Date", "Created By", "unique ID", "Created Date"];
 
     return fields
         .filter((item) => {

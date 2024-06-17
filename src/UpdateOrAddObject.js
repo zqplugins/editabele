@@ -1,10 +1,9 @@
 import {getTableEndpoint} from "./getApiEndpoint";
 
 export async function updatedData (tableName, updatedData ) {
-    console.log(updatedData);
     /* update the modified data in the bubble database */
     const tableEndpoint = getTableEndpoint(tableName);
-    //const url = `https://zeroqode-demo-01.bubbleapps.io/version-test/api/1.1/obj/${tableName}`
+    //const tableEndpoint = `https://zeroqode-demo-01.bubbleapps.io/version-test/api/1.1/obj/${tableName}`
 
     const {
         _id,
@@ -23,21 +22,34 @@ export async function updatedData (tableName, updatedData ) {
 
     const newItem = _id.includes("--internal");
 
-    const apiUrl =  newItem ? tableEndpoint : `${tableEndpoint}/${updatedData?._id}`; // add or update record based on whether its a local item or it has a bubble id
+    const apiUrl =  newItem
+        ? tableEndpoint
+        : `${tableEndpoint}/${updatedData?._id}`; // add or update record based on whether its a local item or it has a bubble id
 
-    fetch(apiUrl, {
-        method: newItem ? "POST":"PATCH",
+   return fetch(apiUrl, {
+        method: newItem ? 'POST' : 'PATCH',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(newData)
     })
-        .then(response => {
-            if (!response.ok) throw new Error("Could not edit or add to bubble");
-            const contentType = response.headers.get('Content-Type');
-            if (contentType && contentType.includes('application/json')) {
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Could not edit or add to bubble");
+            }
+            if(newItem){
                 return response.json();
             }
+        }).then((data) => {
+
+           if(newItem) {
+               return data.id;
+           } else {
+               return updatedData?._id
+           }
+
         })
-        .catch(error => console.error("Error saving data:", error));
+        .catch((error) => {
+            console.error("Error saving data:", error);
+        });
 }

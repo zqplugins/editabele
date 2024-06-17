@@ -10,9 +10,9 @@ export function getApiBaseUrl() {
     const isLive = !url.includes('version-test');
     const environment = isLive
         ? ''
-        : 'version-test';
+        : 'version-test/';
 
-    const baseUrl = `${protocol}//${host}/${environment}/api/1.1`;
+    const baseUrl = `${protocol}//${host}/${environment}api/1.1`;
 
     return baseUrl;
 }

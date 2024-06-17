@@ -5,8 +5,9 @@ import {getTableEndpoint} from "./getApiEndpoint";
  * @return {Promise<any>}
  */
 export async function getDataFromDatabase(tableName) {
-    //const url =  getTableEndpoint(tableName);
-    const url = `https://zeroqode-demo-01.bubbleapps.io/version-test/api/1.1/obj/${tableName}?&sort_field=Modified%20Date&descending=true`;
+    let url =  getTableEndpoint(tableName);
+    url = `${url}?&sort_field=Modified%20Date&descending=true`;
+    //const url = `https://zeroqode-demo-01.bubbleapps.io/version-test/api/1.1/obj/${tableName}?&sort_field=Modified%20Date&descending=true`;
     const response = await fetch(url, {
         method: "GET",
     });
