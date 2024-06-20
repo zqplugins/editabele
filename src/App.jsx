@@ -101,6 +101,11 @@ function App({
     fontColor,
     rating_color,
     rating_hover_color,
+    headerButtonsHoverColor,
+    rowsHoverColor,
+    actionsButtonsHoverColor,
+    paginationButtonsColorHover,
+    lastSelectedRowColor,
   } = optionsForPlugin;
 
   const [bubbleData, setBubbleData] = useState([]);
@@ -540,6 +545,11 @@ function App({
         :root {"{"}
         --progress-bar-label-color: {progressBarLabelColor};
         --buttonsColor: {primaryColor};
+        --headerButtonsHoverColor: {headerButtonsHoverColor};
+        --rowsHoverColor: {rowsHoverColor};
+        --actionsButtonsHoverColor: {actionsButtonsHoverColor};
+        --paginationButtonsColorHover: {paginationButtonsColorHover};
+        --lastSelectedRowColor: {lastSelectedRowColor};
         --highlight-color: {highlightColor};
         --highlight-color-transparent: {changeRgbaAlpha(highlightColor, 0.1)};
         --paddingV:{paddingV}px;

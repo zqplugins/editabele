@@ -1,9 +1,9 @@
-import {getTableEndpoint} from "./getApiEndpoint";
+import { getTableEndpoint } from "./getApiEndpoint";
 
-export async function updatedData (tableName, updatedData ) {
+export async function updatedData(tableName, updatedData) {
     /* update the modified data in the bubble database */
     const tableEndpoint = getTableEndpoint(tableName);
-    //const tableEndpoint = `https://zeroqode-demo-01.bubbleapps.io/version-test/api/1.1/obj/${tableName}`
+    // const tableEndpoint = `https://zeroqode-demo-01.bubbleapps.io/version-test/api/1.1/obj/${tableName}`
 
     const {
         _id,
@@ -22,11 +22,11 @@ export async function updatedData (tableName, updatedData ) {
 
     const newItem = _id.includes("--internal");
 
-    const apiUrl =  newItem
+    const apiUrl = newItem
         ? tableEndpoint
         : `${tableEndpoint}/${updatedData?._id}`; // add or update record based on whether its a local item or it has a bubble id
 
-   return fetch(apiUrl, {
+    return fetch(apiUrl, {
         method: newItem ? 'POST' : 'PATCH',
         headers: {
             'Content-Type': 'application/json',
@@ -37,16 +37,16 @@ export async function updatedData (tableName, updatedData ) {
             if (!response.ok) {
                 throw new Error("Could not edit or add to bubble");
             }
-            if(newItem){
+            if (newItem) {
                 return response.json();
             }
         }).then((data) => {
 
-           if(newItem) {
-               return data.id;
-           } else {
-               return updatedData?._id
-           }
+            if (newItem) {
+                return data.id;
+            } else {
+                return updatedData?._id
+            }
 
         })
         .catch((error) => {

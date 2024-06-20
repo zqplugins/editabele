@@ -1,4 +1,4 @@
-import {getMetadataEndpoint} from "./getApiEndpoint"
+import { getMetadataEndpoint } from "./getApiEndpoint"
 
 /**
  *
@@ -10,9 +10,9 @@ import {getMetadataEndpoint} from "./getApiEndpoint"
  * }>>} fields
  */
 
-export async function getColumnNameFromBubble(tableName){
+export async function getColumnNameFromBubble(tableName) {
     const url = getMetadataEndpoint(tableName);
-    //const url = "https://zeroqode-demo-01.bubbleapps.io/version-test/api/1.1/meta";
+    // const url = "https://zeroqode-demo-01.bubbleapps.io/version-test/api/1.1/meta";
     const response = await fetch(url, {
         method: "GET",
     });
@@ -40,7 +40,7 @@ export async function getColumnNameFromBubble(tableName){
  *   }>>
  * }
  */
-export async function getColumnsForReact( databaseTableName, progressBarField, reviewsField) {
+export async function getColumnsForReact(databaseTableName, progressBarField, reviewsField) {
 
     const fields = await getColumnNameFromBubble(databaseTableName);
     const ignoreField = ["_id", "Slug", "Modified Date", "Created By", "unique ID", "Created Date"];
@@ -50,21 +50,21 @@ export async function getColumnsForReact( databaseTableName, progressBarField, r
             return !ignoreField.includes(item.display);
         })
         .map((item) => {
-        const displayName = item.display;
+            const displayName = item.display;
 
-        let reactType = item.type;
-        if(displayName.includes( progressBarField )){
-            reactType = 'ProgressBar';
-        }
+            let reactType = item.type;
+            if (displayName.includes(progressBarField)) {
+                reactType = 'ProgressBar';
+            }
 
-        if(displayName.includes( reviewsField )){
-            reactType = 'reviews';
-        }
+            if (displayName.includes(reviewsField)) {
+                reactType = 'reviews';
+            }
 
-        return {
-            field: displayName,
-            header: displayName,
-            type: reactType,
-        };
-    });
+            return {
+                field: displayName,
+                header: displayName,
+                type: reactType,
+            };
+        });
 }

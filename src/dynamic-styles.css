@@ -15,6 +15,11 @@
     --fontAlignment: center;
     --rating_color: red;
     --rating_hover_color: #000;
+    --headerButtonsHoverColor: #4F46E5;
+    --rowsHoverColor: #E9ECEF;
+    --actionsButtonsHoverColor: #E9ECEF;
+    --paginationButtonsColorHover: #E9ECEF;
+    --lastSelectedRowColor: #C7D2FE;
 }
 /*setting css butem color*/
 .p-button {
@@ -23,8 +28,8 @@
 }
 
 .p-button:enabled:hover, .p-button:not(button):not(a):not(.p-disabled):hover {
-    background:  var(--highlight-color);
-    border-color: var(--highlight-color);
+    background:  var(--headerButtonsHoverColor);
+    border-color: var(--headerButtonsHoverColor);
 }
 .p-datatable .p-column-header-content {
     justify-content: var(--fontAlignment);
@@ -58,7 +63,7 @@
     color:  var(--buttonsColor);
 }
 .p-datatable.p-datatable-selectable .p-datatable-tbody > tr.p-selectable-row:not(.p-highlight):not(.p-datatable-emptymessage):hover {
-    background: var(--highlight-color);
+    background: var(--rowsHoverColor);
     color:  var(--buttonsColor);
 }
 .p-clickable{
@@ -90,7 +95,8 @@
 }
 
 .p-radiobutton .p-radiobutton-box:not(.p-disabled).p-focus {
-    box-shadow: 0 0 0 0.2rem var(--highlight-color) !important;
+    border-color: var(--buttonsColor);
+    box-shadow: 0 0 0 0.2rem var(--lastSelectedRowColor) !important;
 }
 
 .p-link:focus {
@@ -200,9 +206,6 @@
     vertical-align: middle;
 }
 
-.p-radiobutton .p-radiobutton-box:not(.p-disabled).p-focus {
-    border-color: var(--buttonsColor);
-}
 .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
     background: var(--buttonsColor);
     border-color: var(--buttonsColor);
@@ -229,4 +232,25 @@ i {
 .p-datatable .p-datatable-tbody > tr {
     color: var(--fontColor);
     font-weight: var(--fontWeight);
+}
+
+.p-datatable .p-datatable-tbody > tr > td .p-row-toggler:enabled:hover,
+.p-datatable .p-datatable-tbody > tr > td .p-row-editor-init:enabled:hover,
+.p-datatable .p-datatable-tbody > tr > td .p-row-editor-save:enabled:hover,
+.p-datatable .p-datatable-tbody > tr > td .p-row-editor-cancel:enabled:hover,
+.p-button.p-button-danger.p-button-text:enabled:hover {
+    background: var(--actionsButtonsHoverColor);
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page:not(.p-highlight):hover,
+.p-paginator .p-paginator-first:not(.p-disabled):not(.p-highlight):hover,
+.p-paginator .p-paginator-prev:not(.p-disabled):not(.p-highlight):hover,
+.p-paginator .p-paginator-next:not(.p-disabled):not(.p-highlight):hover,
+.p-paginator .p-paginator-last:not(.p-disabled):not(.p-highlight):hover {
+    background: var(--paginationButtonsColorHover);
+}
+
+svg.p-icon.p-sortable-column-icon {
+    width: 11px;
+    height: 11px;
 }
