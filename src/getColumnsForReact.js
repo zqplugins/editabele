@@ -49,6 +49,9 @@ export async function getColumnsForReact(databaseTableName, progressBarField, re
         .filter((item) => {
             return !ignoreField.includes(item.display);
         })
+        .sort((item1, item2) => {
+            return item1.display.localeCompare(item2.display);
+        })
         .map((item) => {
             const displayName = item.display;
 
